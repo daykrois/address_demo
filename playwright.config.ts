@@ -48,6 +48,12 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    {
+      name:'Microsoft Edge',
+      use:{
+        channel:'msedge'
+      },
+    },
 
     /* Test against mobile viewports. */
     // {
