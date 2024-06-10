@@ -4,7 +4,7 @@ import path from 'path';
 
 // 异步方法
 test('shenzhen_address', async ({ page }) => {
-  const searchContent = '狮头岭村西区'
+  const searchContent = '龙华富联新村一区'
   // 文件目录
   const dirPath = searchContent
   // 结果文件名
@@ -20,6 +20,14 @@ test('shenzhen_address', async ({ page }) => {
   // 结果
   let result = ''
   for(let i = 1; i < count; i++){
+    // 等待接口响应
+    const databuildingresponsePromise =  page.waitForResponse(response => 
+      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
+    );
+
+    const datahouseResponsePromise =  page.waitForResponse(response => 
+      response.url().includes('/data-house/getBackListAllByWrapper') && response.status() === 200
+    );
     // 名称
     const addressName = await page.locator(`#app > div > div.box > div > div:nth-child(${i}) > div.right > div.buildingName`).textContent()
     
@@ -29,22 +37,16 @@ test('shenzhen_address', async ({ page }) => {
     await page.locator(`#app > div > div.box > div > div:nth-child(${i})`).click();
 
 
-    // 等待接口响应
-    const databuildingresponsePromise = await page.waitForResponse(response => 
-      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
-    );
-
-    const datahouseResponsePromise = await page.waitForResponse(response => 
-      response.url().includes('/data-house/getBackListAllByWrapper') && response.status() === 200
-    );
+    
 
 
 
-    const response = databuildingresponsePromise;
+    const response = await databuildingresponsePromise;
     const data = await response.json();
     const totalhouse = data.data[0].totalhouse;
 
-    const jsonData = await datahouseResponsePromise.json();
+    const response1 = await datahouseResponsePromise;
+    const jsonData = await response1.json();
     if(jsonData.code != -1){
       await page.waitForSelector('.buildMsg',{state:'visible'});
     }
