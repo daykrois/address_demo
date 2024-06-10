@@ -4,7 +4,7 @@ import path from 'path';
 
 // 异步方法
 test('shenzhen_address', async ({ page }) => {
-  const searchContent = '龙华富联新村一区'
+  const searchContent = '骏龙新村'
   // 文件目录
   const dirPath = searchContent
   // 结果文件名
@@ -20,14 +20,9 @@ test('shenzhen_address', async ({ page }) => {
   // 结果
   let result = ''
   for(let i = 1; i < count; i++){
-    // 等待接口响应
-    const databuildingresponsePromise =  page.waitForResponse(response => 
-      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
-    );
-
-    const datahouseResponsePromise =  page.waitForResponse(response => 
-      response.url().includes('/data-house/getBackListAllByWrapper') && response.status() === 200
-    );
+    
+    
+    
     // 名称
     const addressName = await page.locator(`#app > div > div.box > div > div:nth-child(${i}) > div.right > div.buildingName`).textContent()
     
@@ -36,39 +31,70 @@ test('shenzhen_address', async ({ page }) => {
 
     await page.locator(`#app > div > div.box > div > div:nth-child(${i})`).click();
 
-
-    
-
-
+    // 等待接口响应
+    const databuildingresponsePromise = page.waitForResponse(response => 
+      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
+    );
 
     const response = await databuildingresponsePromise;
     const data = await response.json();
-    const totalhouse = data.data[0].totalhouse;
+    let totalhouse = 0
+    if(data.code != -1){
+      totalhouse = data.data[0].totalhouse;
+      const datahouseResponsePromise = await page.waitForResponse(response => 
+        response.url().includes('/data-house/getBackListAllByWrapper') && response.status() === 200,
+      );
+      const response1 = datahouseResponsePromise;
+      const jsonData = await response1.json();
+      if(jsonData.code != -1){
+        await page.waitForSelector('.buildMsg',{state:'visible'});
+      }
+      await page.waitForSelector('#app > div > div:nth-child(5) > div.build > div.buildinfo > div:nth-child(4)',{state:'visible'})
+      const continfo = await page.locator('.continfo').allTextContents();
+      // 行政区划
+      const administrativeDivisions = continfo[0].split('：')[1].trim()
+      // console.log(administrativeDivisions);
+      result+='行政区划：'+administrativeDivisions+'|'+'\n';
+      // 楼栋编码
+      const buildingCode = continfo[1].split('：')[1].trim()
+      // console.log(buildingCode)
+      result += '楼栋编码：'+buildingCode+'|'+'\n';
+      // 标准地址
+      const standardAddress = continfo[2].split('：')[1].trim()
+      // console.log(standardAddress);
+      result += '标准地址：'+standardAddress+'|'+'\n';
+      const floor = await page.locator('.rowtitle').allTextContents();
+      // 层数
+      if(floor && floor.length >0){
+        const lastfloor = floor[floor.length-1]
+        result += '层数：' + lastfloor+'|'+'\n';
+      }
+      else{
+        result += '层数：' + '0层|'+'\n';
+      }
+      // console.log(lastfloor);
+      if(totalhouse){
+        result += '户数：' + totalhouse+'\n\n';
+      }
 
-    const response1 = await datahouseResponsePromise;
-    const jsonData = await response1.json();
-    if(jsonData.code != -1){
-      await page.waitForSelector('.buildMsg',{state:'visible'});
+    }else{
+      await page.waitForSelector('#app > div > div:nth-child(5) > div.build > div.buildinfo > div:nth-child(3)',{state:'visible'})
+      const continfo = await page.locator('.continfo').allTextContents();
+      // 楼栋编码
+      const buildingCode = continfo[0].split('：')[1].trim()
+      // console.log(buildingCode)
+      result += '楼栋编码：'+buildingCode+'|'+'\n';
+      // 标准地址
+      const standardAddress = continfo[1].split('：')[1].trim()
+      // console.log(standardAddress);
+      result += '标准地址：'+standardAddress+'|'+'\n\n';
     }
+    
 
-    // let capturedResponse
-    // let totalHouse
-    // const handleResponse = async (response) => {
-    //   if (response.url().includes('/data-building/getBackListAllByWrapper')) {
-    //     capturedResponse = await response.json();
-    //     page.off('response', handleResponse);
-    //   }
-    // };
-
-    // page.once('response', handleResponse);
-    // if (capturedResponse) {
-    //   totalHouse = capturedResponse.data[0].totalhouse;
-    //   console.log(totalHouse)
-    // }
 
     
 
-    await page.waitForSelector('#app > div > div:nth-child(5) > div.build > div.buildinfo > div:nth-child(4)',{state:'visible'})
+    
     
 
     
@@ -79,34 +105,10 @@ test('shenzhen_address', async ({ page }) => {
     // // await page.locator('#app > div > div:nth-child(5) > div.build').screenshot({path:`${dirPath}\\${fileName}.png`})
     // await page.screenshot({fullPage:true,path:`${dirPath}\\${addressName}.png`})
 
-    const continfo = await page.locator('.continfo').allTextContents();
-    // 行政区划
-    const administrativeDivisions = continfo[0].split('：')[1].trim()
-    // console.log(administrativeDivisions);
-    result+='行政区划：'+administrativeDivisions+'|'+'\n';
-    // 楼栋编码
-    const buildingCode = continfo[1].split('：')[1].trim()
-    // console.log(buildingCode)
-    result += '楼栋编码：'+buildingCode+'|'+'\n';
-    // 标准地址
-    const standardAddress = continfo[2].split('：')[1].trim()
-    // console.log(standardAddress);
-    result += '标准地址：'+standardAddress+'|'+'\n';
-    const floor = await page.locator('.rowtitle').allTextContents();
-    // 层数
-    if(floor && floor.length >0){
-      const lastfloor = floor[floor.length-1]
-      result += '层数：' + lastfloor+'|'+'\n';
-    }
-    else{
-      result += '层数：' + '0层|'+'\n';
-    }
-    // console.log(lastfloor);
-    if(totalhouse){
-      result += '户数：' + totalhouse+'\n\n';
-    }else{
-      result += '户数：' + '0'+'\n\n';
-    }
+    
+    // else{
+    //   result += '户数：' + '0'+'\n\n';
+    // }
     await page.locator('#app > div > div:nth-child(5) > div.toptext').click();
     
   }
