@@ -1,10 +1,10 @@
 import { test } from '@playwright/test';
 import fs, { mkdirSync } from 'fs'
 import path from 'path';
-
+import { generate } from 'csv';
 // 异步方法
 test('shenzhen_address', async ({ page }) => {
-  const searchContent = '骏龙新村'
+  const searchContent = '金星大厦'
   // 文件目录
   const dirPath = searchContent
   // 结果文件名
@@ -21,7 +21,10 @@ test('shenzhen_address', async ({ page }) => {
   let result = ''
   for(let i = 1; i < count; i++){
     
-    
+    // 等待接口响应
+    const databuildingresponsePromise = page.waitForResponse(response => 
+      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
+    );
     
     // 名称
     const addressName = await page.locator(`#app > div > div.box > div > div:nth-child(${i}) > div.right > div.buildingName`).textContent()
@@ -31,10 +34,7 @@ test('shenzhen_address', async ({ page }) => {
 
     await page.locator(`#app > div > div.box > div > div:nth-child(${i})`).click();
 
-    // 等待接口响应
-    const databuildingresponsePromise = page.waitForResponse(response => 
-      response.url().includes('/data-building/getBackListAllByWrapper') && response.status() === 200
-    );
+    
 
     const response = await databuildingresponsePromise;
     const data = await response.json();
@@ -70,7 +70,7 @@ test('shenzhen_address', async ({ page }) => {
         result += '层数：' + lastfloor+'|'+'\n';
       }
       else{
-        result += '层数：' + '0层|'+'\n';
+        result += '层数：' + '0层|'+'\n\n';
       }
       // console.log(lastfloor);
       if(totalhouse){
@@ -90,25 +90,6 @@ test('shenzhen_address', async ({ page }) => {
       result += '标准地址：'+standardAddress+'|'+'\n\n';
     }
     
-
-
-    
-
-    
-    
-
-    
-    // 截图
-    // await page.evaluate(()=>{
-    //   document.querySelector("#app > div > div:nth-child(5) > div.build").style.overflowY='visible'
-    // })
-    // // await page.locator('#app > div > div:nth-child(5) > div.build').screenshot({path:`${dirPath}\\${fileName}.png`})
-    // await page.screenshot({fullPage:true,path:`${dirPath}\\${addressName}.png`})
-
-    
-    // else{
-    //   result += '户数：' + '0'+'\n\n';
-    // }
     await page.locator('#app > div > div:nth-child(5) > div.toptext').click();
     
   }
@@ -132,6 +113,12 @@ function writeFile(dirPath:string,fileName:string,data:string):void{
   }
 }
 
+
+// function writeCsv(){
+//   const headers:string[] = ["文件夹","名称","经度","纬度","海拔","文本显示风格","图标样式","","","","",""]
+//   const data:string[] = 
+
+// }
 
 
 
